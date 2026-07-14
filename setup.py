@@ -107,8 +107,8 @@ setup(
     entry_points={
         # Map the console script group to the list of command definitions.
         "console_scripts": [
-            # Register the plans command to invoke the main function.
-            "plans=PLANS.__main__:main",
+            # Register the PLANS command to invoke the main function.
+            "PLANS=PLANS.__main__:main",
         ],
     },
     # Include non-Python files listed in MANIFEST.in in the distribution.

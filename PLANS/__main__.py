@@ -48,31 +48,31 @@ SPDX ID              : GPL-3.0-only
 
 
 USAGE                :
-    plans --db /path/to/plans.db init
-    plans --db /path/to/plans.db strack create ID TITLE [--description DESC] [--priority N]
-    plans --db /path/to/plans.db strack list [--status STATUS]
-    plans strack show ID
-    plans strack delete ID
-    plans plan create STRACK_ID PLAN_ID TITLE [--description DESC] [--priority N]
-    plans plan list [STRACK_ID] [--status STATUS]
-    plans plan show PLAN_ID
-    plans plan update PLAN_ID --status STATUS
-    plans plan delete PLAN_ID
-    plans issue create STRACK_ID ISSUE_ID TITLE [--description DESC] [--severity SEV]
-    plans issue list [STRACK_ID] [--status STATUS] [--severity SEV]
-    plans issue show ISSUE_ID
-    plans issue update ISSUE_ID --status STATUS
-    plans issue delete ISSUE_ID
-    plans action create STRACK_ID ACTION_ID TITLE [--description DESC]
-    plans action list [STRACK_ID] [--status STATUS]
-    plans action show ACTION_ID
-    plans action update ACTION_ID --status STATUS
-    plans action delete ACTION_ID
-    plans note create STRACK_ID NOTE_ID TITLE [--content CONTENT]
-    plans note list [STRACK_ID]
-    plans note show NOTE_ID
-    plans note update NOTE_ID [--title TITLE] [--content CONTENT]
-    plans note delete NOTE_ID
+    PLANS --db /path/to/plans.db init
+    PLANS --db /path/to/plans.db strack create ID TITLE [--description DESC] [--priority N]
+    PLANS --db /path/to/plans.db strack list [--status STATUS]
+    PLANS strack show ID
+    PLANS strack delete ID
+    PLANS plan create STRACK_ID PLAN_ID TITLE [--description DESC] [--priority N]
+    PLANS plan list [STRACK_ID] [--status STATUS]
+    PLANS plan show PLAN_ID
+    PLANS plan update PLAN_ID --status STATUS
+    PLANS plan delete PLAN_ID
+    PLANS issue create STRACK_ID ISSUE_ID TITLE [--description DESC] [--severity SEV]
+    PLANS issue list [STRACK_ID] [--status STATUS] [--severity SEV]
+    PLANS issue show ISSUE_ID
+    PLANS issue update ISSUE_ID --status STATUS
+    PLANS issue delete ISSUE_ID
+    PLANS action create STRACK_ID ACTION_ID TITLE [--description DESC]
+    PLANS action list [STRACK_ID] [--status STATUS]
+    PLANS action show ACTION_ID
+    PLANS action update ACTION_ID --status STATUS
+    PLANS action delete ACTION_ID
+    PLANS note create STRACK_ID NOTE_ID TITLE [--content CONTENT]
+    PLANS note list [STRACK_ID]
+    PLANS note show NOTE_ID
+    PLANS note update NOTE_ID [--title TITLE] [--content CONTENT]
+    PLANS note delete NOTE_ID
 
 ====================
 
@@ -148,26 +148,26 @@ def _init_build_parser_function_():
     """
     # Create the top-level argument parser with the program description.
     argument_parser = argparse.ArgumentParser(
-        prog="plans",
+        prog="PLANS",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
             "PLANS — Priority Logs Actions Notes Stracks\n"
             "Local-first project management stack system.\n\n"
             "Quick start:\n"
-            "  plans init <project>                 Create a new project database\n"
-            "  plans <project> strack create ...    Add a new issue-tracker stack\n"
-            "  plans <project> plan create ...      Add a todo item\n"
-            "  plans <project> plan list            List todos\n\n"
+            "  PLANS <project> init                  Create a new project database\n"
+            "  PLANS <project> strack create ...     Add a new issue-tracker stack\n"
+            "  PLANS <project> plan create ...       Add a todo item\n"
+            "  PLANS <project> plan list             List todos\n\n"
             "The project name resolves to {COMMON_PLANS_DB}/<project>.db\n"
             "automatically. Use --db for an explicit file path."
         ),
         epilog=(
             "Examples:\n"
-            "  plans init backend-api\n"
-            "  plans backend-api strack create main \"Backend API\"\n"
-            "  plans backend-api plan create main improve-auth \"Add OAuth2\" --priority 4\n"
-            "  plans backend-api issue create main login-bug \"Login timeout\" --severity critical\n"
-            "  plans backend-api plan list --status in_progress"
+            "  PLANS backend-api init\n"
+            "  PLANS backend-api strack create main \"Backend API\"\n"
+            "  PLANS backend-api plan create main improve-auth \"Add OAuth2\" --priority 4\n"
+            "  PLANS backend-api issue create main login-bug \"Login timeout\" --severity critical\n"
+            "  PLANS backend-api plan list --status in_progress"
         ),
     )
     # Add a global option to specify the database file path for all subcommands.
@@ -836,7 +836,7 @@ def main(arguments_list=None):
     # For all entity commands, ensure the database file exists first.
     if not os.path.isfile(database_path):
         # Prepare the Chinese error message for missing database file.
-        message_error = "[X] 数据库文件不存在，请先运行 'plans init' 初始化数据库: "
+        message_error = "[X] 数据库文件不存在，请先运行 'PLANS <project> init' 初始化数据库: "
         message_error += database_path
         # Print the error message since no logger is configured in CLI mode.
         print(message_error)

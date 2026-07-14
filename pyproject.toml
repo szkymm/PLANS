@@ -43,7 +43,7 @@ Homepage = "https://github.com/szkymm/plans"
 Repository = "https://github.com/szkymm/plans"
 
 [project.scripts]
-plans = "PLANS.__main__:main"
+PLANS = "PLANS.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["PLANS*"]
