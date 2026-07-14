@@ -12,11 +12,12 @@ DESCRIPTION          :
     SQLite database connection management, schema initialization, and
     base CRUD operations for the PLANS local-first project management system.
 
-AUTHOR               : Matt Belfast Brown
+AUTHOR               : Suzuki Yumemi
 
-CONTACT              : thedayofthedo@gmail.com
+CONTACT              : szkymm@gmail.com
 
 MAINTAINER           :
+    Suzuki Yumemi (szkymm@gmail.com)
     Matt Belfast Brown (thedayofthedo@gmail.com)
 
 

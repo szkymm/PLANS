@@ -14,11 +14,12 @@ DESCRIPTION          :
     Strack containers, with status tracking through pending,
     in_progress, done, and cancelled states.
 
-AUTHOR               : Matt Belfast Brown
+AUTHOR               : Suzuki Yumemi
 
-CONTACT              : thedayofthedo@gmail.com
+CONTACT              : szkymm@gmail.com
 
 MAINTAINER           :
+    Suzuki Yumemi (szkymm@gmail.com)
     Matt Belfast Brown (thedayofthedo@gmail.com)
 
 

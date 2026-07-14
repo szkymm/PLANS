@@ -14,11 +14,12 @@ DESCRIPTION          :
     interface for programmatic use of the local-first project
     management stack system.
 
-AUTHOR               : Matt Belfast Brown
+AUTHOR               : Suzuki Yumemi
 
-CONTACT              : thedayofthedo@gmail.com
+CONTACT              : szkymm@gmail.com
 
 MAINTAINER           :
+    Suzuki Yumemi (szkymm@gmail.com)
     Matt Belfast Brown (thedayofthedo@gmail.com)
 
 

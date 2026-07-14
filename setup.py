@@ -15,7 +15,7 @@ DESCRIPTION          :
 
 AUTHOR               : Matt Belfast Brown
 
-CONTACT              : thedayofthedo@gmail.com
+CONTACT              : szkymm@gmail.com
 
 MAINTAINER           :
     Matt Belfast Brown (thedayofthedo@gmail.com)
@@ -79,9 +79,9 @@ setup(
     # Provide a brief description of the tool for PyPI and help text.
     description="Priority Logs Actions Notes Stracks -- Local-first project management stack system.",
     # Identify the primary author of the package.
-    author="Matt Belfast Brown",
+    author="Suzuki Yumemi",
     # Supply the contact email address for the package author.
-    author_email="thedayofthedo@gmail.com",
+    author_email="szkymm@gmail.com",
     # List search keywords for package discovery on PyPI.
     keywords=[
         # Include PLANS as the primary keyword.

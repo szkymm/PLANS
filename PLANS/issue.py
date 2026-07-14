@@ -13,11 +13,12 @@ DESCRIPTION          :
     container with status open, in_progress, resolved, closed and
     severity critical, high, medium, low tracking.
 
-AUTHOR               : Matt Belfast Brown
+AUTHOR               : Suzuki Yumemi
 
-CONTACT              : thedayofthedo@gmail.com
+CONTACT              : szkymm@gmail.com
 
 MAINTAINER           :
+    Suzuki Yumemi (szkymm@gmail.com)
     Matt Belfast Brown (thedayofthedo@gmail.com)
 
 

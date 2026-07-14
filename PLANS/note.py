@@ -13,11 +13,12 @@ DESCRIPTION          :
     Provides CRUD operations for free-form documentation entries belonging
     to Strack containers, with title and content fields persisted in SQLite.
 
-AUTHOR               : Matt Belfast Brown
+AUTHOR               : Suzuki Yumemi
 
-CONTACT              : thedayofthedo@gmail.com
+CONTACT              : szkymm@gmail.com
 
 MAINTAINER           :
+    Suzuki Yumemi (szkymm@gmail.com)
     Matt Belfast Brown (thedayofthedo@gmail.com)
 
 

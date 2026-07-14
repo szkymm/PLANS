@@ -13,11 +13,12 @@ DESCRIPTION          :
     container in PLANS, linking Plans, Issues, Actions, and Notes under
     a single stack identifier for project-based management.
 
-AUTHOR               : Matt Belfast Brown
+AUTHOR               : Suzuki Yumemi
 
-CONTACT              : thedayofthedo@gmail.com
+CONTACT              : szkymm@gmail.com
 
 MAINTAINER           :
+    Suzuki Yumemi (szkymm@gmail.com)
     Matt Belfast Brown (thedayofthedo@gmail.com)
 
 
