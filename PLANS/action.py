@@ -27,7 +27,7 @@ PROJECT CREATE DATE  : 2026-07-15
 
 PROJECT VERSION DATE : 2026-07-15
 
-PROJECT VERSION      : 0.1.0
+PROJECT VERSION      : 0.1.1
 
 
 FILE CREATE DATE     : 2026-07-15
@@ -94,7 +94,7 @@ from typing import Optional, List, Dict, Any
 from .database import DatabaseManager
 
 # Define the package version string to match PROJECT VERSION in docstring.
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 
 class ActionManager:

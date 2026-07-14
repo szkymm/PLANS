@@ -27,7 +27,7 @@ PROJECT CREATE DATE  : 2026-07-15
 
 PROJECT VERSION DATE : 2026-07-15
 
-PROJECT VERSION      : 0.1.0
+PROJECT VERSION      : 0.1.1
 
 
 FILE CREATE DATE     : 2026-07-15
@@ -76,7 +76,7 @@ Sort License:
 """
 
 # Define the package version string to match PROJECT VERSION in docstring.
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 # Export the database manager and entity managers as the public API surface.
 __all__ = [
     "DatabaseManager",

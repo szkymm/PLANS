@@ -28,7 +28,7 @@ PROJECT CREATE DATE  : 2026-07-15
 
 PROJECT VERSION DATE : 2026-07-15
 
-PROJECT VERSION      : 0.1.0
+PROJECT VERSION      : 0.1.1
 
 
 FILE CREATE DATE     : 2026-07-15
@@ -125,12 +125,14 @@ from .action import ActionManager
 from .note import NoteManager
 
 # Define the file version to match PROJECT VERSION in docstring.
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
-# Define the default database file path for the local SQLite database.
+# Define the default database file path when no project or env var is set.
 default_database_path = "plans.db"
-# Define the environment variable name for custom database path override.
+# Define the environment variable name pointing to the database storage directory.
 environment_database_path = "COMMON_PLANS_DB"
+# Define the set of known top-level commands for project-name detection.
+known_commands = {"init", "strack", "plan", "issue", "action", "note"}
 
 
 def _init_build_parser_function_():
@@ -147,8 +149,26 @@ def _init_build_parser_function_():
     # Create the top-level argument parser with the program description.
     argument_parser = argparse.ArgumentParser(
         prog="plans",
-        description="PLANS -- Priority Logs Actions Notes Stracks: "
-        + "Local-first project management stack system.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "PLANS — Priority Logs Actions Notes Stracks\n"
+            "Local-first project management stack system.\n\n"
+            "Quick start:\n"
+            "  plans init <project>                 Create a new project database\n"
+            "  plans <project> strack create ...    Add a new issue-tracker stack\n"
+            "  plans <project> plan create ...      Add a todo item\n"
+            "  plans <project> plan list            List todos\n\n"
+            "The project name resolves to {COMMON_PLANS_DB}/<project>.db\n"
+            "automatically. Use --db for an explicit file path."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  plans init backend-api\n"
+            "  plans backend-api strack create main \"Backend API\"\n"
+            "  plans backend-api plan create main improve-auth \"Add OAuth2\" --priority 4\n"
+            "  plans backend-api issue create main login-bug \"Login timeout\" --severity critical\n"
+            "  plans backend-api plan list --status in_progress"
+        ),
     )
     # Add a global option to specify the database file path for all subcommands.
     argument_parser.add_argument(
@@ -165,8 +185,13 @@ def _init_build_parser_function_():
     )
     # Create the subparsers container for entity-level commands.
     argument_subparsers = argument_parser.add_subparsers(
-        title="commands",
+        title="available commands",
         dest="selected_command",
+        description=(
+            "For convenience, the first positional argument is treated as a project\n"
+            "name and auto-resolved to {COMMON_PLANS_DB}/<name>.db.\n"
+            "Use --db to override with an explicit file path instead."
+        ),
     )
     # --- init subcommand ---
     # Create the parser for the init database initialization command.
@@ -742,10 +767,12 @@ def main(arguments_list=None):
     """
     Execute the PLANS command-line interface entry point.
 
-    Parses command-line arguments, initializes the database for the init
-    command, and dispatches entity CRUD operations to the appropriate
-    manager classes. Prints results as formatted JSON output and returns
-    exit code 0 on success or 1 on error.
+    Supports project-first syntax: when the first positional argument is
+    not a recognized command, it is treated as a project name and the
+    database path is auto-resolved from COMMON_PLANS_DB or current directory.
+    This enables `plans myproject strack create ...` without explicit --db.
+
+    The parameters are as follows:
 
     :param arguments_list: Optional pre-parsed argument list for testing.
     :type arguments_list: Optional[Sequence[str]]
@@ -754,30 +781,52 @@ def main(arguments_list=None):
     """
     # Reconfigure standard output to use UTF-8 encoding for cross-platform support.
     sys.stdout.reconfigure(encoding="utf-8")
+    # Determine the argument list to process, defaulting to sys.argv.
+    if arguments_list is not None:
+        # Use the explicitly provided argument list for programmatic invocations.
+        list_argv = list(arguments_list)
+    else:
+        # Copy system arguments excluding the program name itself.
+        list_argv = list(sys.argv[1:])
+    # Detect and extract a project name as the first positional argument.
+    project_name = None
+    # Check if the first argument is a project name rather than a command or flag.
+    if list_argv and list_argv[0] not in known_commands and not list_argv[0].startswith("-"):
+        # Pop the first argument as the project name for path resolution.
+        project_name = list_argv.pop(0)
+    # Resolve the database path from the project name when provided.
+    if project_name is not None:
+        # Determine the base directory from environment variable or current directory.
+        string_base = os.environ.get(environment_database_path, ".")
+        # Construct the full database file path from directory and project name.
+        database_path = os.path.join(string_base, f"{project_name}.db")
+        # Inject the resolved --db flag into the remaining argument list for the parser.
+        list_argv = ["--db", database_path] + list_argv
     # Build the full argument parser structure via the private builder.
     argument_parser = _init_build_parser_function_()
-    # Parse the command-line arguments into a namespace object.
-    if arguments_list is None:
-        # Use sys.argv[1:] when no explicit argument list is provided.
-        parsed_arguments = argument_parser.parse_args()
-    else:
-        # Use the supplied argument list for programmatic invocation.
-        parsed_arguments = argument_parser.parse_args(arguments_list)
+    # Parse the processed command-line arguments into a namespace object.
+    parsed_arguments = argument_parser.parse_args(list_argv)
     # Retrieve the selected top-level command from the parsed namespace.
     selected_command = getattr(parsed_arguments, "selected_command", None)
-    # Resolve the database file path from arguments, env variable, or default.
+    # Resolve the database file path from --db, env variable, or default fallback.
     database_path = getattr(parsed_arguments, "database_path", None)
-    # Fall back to the environment variable when no path was provided.
+    # Fall back to the environment variable when no explicit path was provided.
     if database_path is None:
         # Attempt to read the database path from the environment variable.
         database_path = os.environ.get(
             environment_database_path,
             default_database_path,
         )
-    # Handle the case where no recognized command was provided.
+    # Display project-oriented help when a project name is given without a command.
     if selected_command is None:
-        # Print the help text and exit cleanly when no command is given.
+        # Print the command-line help text when no recognized command was given.
         argument_parser.print_help()
+        # Show a hint about the detected project name for better user guidance.
+        if project_name is not None:
+            # Print a tip showing the resolved database path for the project.
+            print(f"\n  Tip: project '{project_name}' resolves to '{database_path}'")
+            # Suggest example commands to help the user get started.
+            print(f"  Try: plans {project_name} strack list")
         # Return exit code 0 since displaying help is not an error.
         return 0
     # Dispatch to the init handler for database initialization.

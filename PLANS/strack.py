@@ -26,7 +26,7 @@ PROJECT CREATE DATE  : 2026-07-15
 
 PROJECT VERSION DATE : 2026-07-15
 
-PROJECT VERSION      : 0.1.0
+PROJECT VERSION      : 0.1.1
 
 
 FILE CREATE DATE     : 2026-07-15
@@ -82,7 +82,7 @@ from typing import Any, Dict, List, Optional
 
 from .database import DatabaseManager
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # Configure the module-level logger for diagnostic output.
 logger = logging.getLogger(__name__)

@@ -26,14 +26,14 @@ PROJECT CREATE DATE  : 2026-07-15
 
 PROJECT VERSION DATE : 2026-07-15
 
-PROJECT VERSION      : 0.1.0
+PROJECT VERSION      : 0.1.1
 
 
 FILE CREATE DATE     : 2026-07-15
 
 FILE VERSION DATE    : 2026-07-15
 
-FILE VERSION         : 0.1.0
+FILE VERSION         : 0.1.1
 
 
 STATUS               : Stable
@@ -84,7 +84,7 @@ from typing import Optional, List, Dict, Any
 from .database import DatabaseManager
 
 # Define the package version string to match PROJECT VERSION in docstring.
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # Define the set of allowed status values for the Issue entity.
 allowed_statuses = ["open", "in_progress", "resolved", "closed"]

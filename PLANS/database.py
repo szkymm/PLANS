@@ -25,7 +25,7 @@ PROJECT CREATE DATE  : 2026-07-15
 
 PROJECT VERSION DATE : 2026-07-15
 
-PROJECT VERSION      : 0.1.0
+PROJECT VERSION      : 0.1.1
 
 
 FILE CREATE DATE     : 2026-07-15
@@ -78,7 +78,7 @@ import os
 from datetime import datetime, timezone
 
 # Define the module version synchronized with the project version in the docstring.
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 
 class DatabaseManager:
