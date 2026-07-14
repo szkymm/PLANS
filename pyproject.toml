@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PLANS"
+version = "0.1.0"
+description = "Priority Logs Actions Notes Stracks -- Local-first project management stack system."
+readme = "README.md"
+license = {text = "GPL-3.0-only"}
+authors = [
+    {name = "Matt Belfast Brown", email = "thedayofthedo@gmail.com"},
+]
+keywords = [
+    "plans",
+    "todo",
+    "issue-tracker",
+    "project-management",
+    "local-first",
+    "cli",
+    "sqlite",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Project Management",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.8"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/thedayofthedoctor/plans"
+Repository = "https://github.com/thedayofthedoctor/plans"
+
+[project.scripts]
+plans = "PLANS.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["PLANS*"]
+
+[tool.setuptools]
+zip-safe = false

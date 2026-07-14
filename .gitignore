@@ -1,0 +1,17 @@
+# PLANS .gitignore -- Local-first project management tool.
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.db
+*.sqlite
+*.sqlite3
+.venv/
+venv/
+.env
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
