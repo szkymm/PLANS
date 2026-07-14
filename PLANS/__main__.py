@@ -39,7 +39,7 @@ FILE VERSION         : 1.0.0
 
 STATUS               : Stable
 
-PYTHON               : >=3.8
+PYTHON               : >=3.9
 
 LICENSE              : GPL-3.0-only
 
@@ -47,31 +47,31 @@ SPDX ID              : GPL-3.0-only
 
 
 USAGE                :
-    python -m PLANS init [--path PATH]
-    python -m PLANS strack create ID TITLE [--description DESC] [--priority N]
-    python -m PLANS strack list [--status STATUS]
-    python -m PLANS strack show ID
-    python -m PLANS strack delete ID
-    python -m PLANS plan create STRACK_ID PLAN_ID TITLE [--description DESC] [--priority N]
-    python -m PLANS plan list [STRACK_ID] [--status STATUS]
-    python -m PLANS plan show PLAN_ID
-    python -m PLANS plan update PLAN_ID --status STATUS
-    python -m PLANS plan delete PLAN_ID
-    python -m PLANS issue create STRACK_ID ISSUE_ID TITLE [--description DESC] [--severity SEV]
-    python -m PLANS issue list [STRACK_ID] [--status STATUS] [--severity SEV]
-    python -m PLANS issue show ISSUE_ID
-    python -m PLANS issue update ISSUE_ID --status STATUS
-    python -m PLANS issue delete ISSUE_ID
-    python -m PLANS action create STRACK_ID ACTION_ID TITLE [--description DESC]
-    python -m PLANS action list [STRACK_ID] [--status STATUS]
-    python -m PLANS action show ACTION_ID
-    python -m PLANS action update ACTION_ID --status STATUS
-    python -m PLANS action delete ACTION_ID
-    python -m PLANS note create STRACK_ID NOTE_ID TITLE [--content CONTENT]
-    python -m PLANS note list [STRACK_ID]
-    python -m PLANS note show NOTE_ID
-    python -m PLANS note update NOTE_ID [--title TITLE] [--content CONTENT]
-    python -m PLANS note delete NOTE_ID
+    plans --db /path/to/plans.db init
+    plans --db /path/to/plans.db strack create ID TITLE [--description DESC] [--priority N]
+    plans --db /path/to/plans.db strack list [--status STATUS]
+    plans strack show ID
+    plans strack delete ID
+    plans plan create STRACK_ID PLAN_ID TITLE [--description DESC] [--priority N]
+    plans plan list [STRACK_ID] [--status STATUS]
+    plans plan show PLAN_ID
+    plans plan update PLAN_ID --status STATUS
+    plans plan delete PLAN_ID
+    plans issue create STRACK_ID ISSUE_ID TITLE [--description DESC] [--severity SEV]
+    plans issue list [STRACK_ID] [--status STATUS] [--severity SEV]
+    plans issue show ISSUE_ID
+    plans issue update ISSUE_ID --status STATUS
+    plans issue delete ISSUE_ID
+    plans action create STRACK_ID ACTION_ID TITLE [--description DESC]
+    plans action list [STRACK_ID] [--status STATUS]
+    plans action show ACTION_ID
+    plans action update ACTION_ID --status STATUS
+    plans action delete ACTION_ID
+    plans note create STRACK_ID NOTE_ID TITLE [--content CONTENT]
+    plans note list [STRACK_ID]
+    plans note show NOTE_ID
+    plans note update NOTE_ID [--title TITLE] [--content CONTENT]
+    plans note delete NOTE_ID
 
 ====================
 
@@ -129,7 +129,7 @@ __version__ = "0.1.0"
 # Define the default database file path for the local SQLite database.
 default_database_path = "plans.db"
 # Define the environment variable name for custom database path override.
-environment_database_path = "PLANS_DB_PATH"
+environment_database_path = "COMMON_PLANS_DB"
 
 
 def _init_build_parser_function_():
@@ -149,6 +149,13 @@ def _init_build_parser_function_():
         description="PLANS -- Priority Logs Actions Notes Stracks: "
         + "Local-first project management stack system.",
     )
+    # Add a global option to specify the database file path for all subcommands.
+    argument_parser.add_argument(
+        "--db",
+        dest="database_path",
+        default=None,
+        help="Path to the SQLite database file (default: ./plans.db or $COMMON_PLANS_DB).",
+    )
     # Display the package version when the version flag is used.
     argument_parser.add_argument(
         "--version",
@@ -165,13 +172,6 @@ def _init_build_parser_function_():
     init_subparser = argument_subparsers.add_parser(
         "init",
         help="Initialize the PLANS database schema.",
-    )
-    # Add the optional path argument to specify a custom database location.
-    init_subparser.add_argument(
-        "--path",
-        dest="database_path",
-        default=None,
-        help="Path to the SQLite database file (default: ./plans.db).",
     )
     # --- strack entity subcommands ---
     _init_build_parser_function_strack_(argument_subparsers)

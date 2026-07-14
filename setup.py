@@ -37,7 +37,7 @@ FILE VERSION         : 1.0.0
 
 STATUS               : Stable
 
-PYTHON               : >=3.8
+PYTHON               : >=3.9
 
 LICENSE              : GPL-3.0-only
 
@@ -101,8 +101,8 @@ setup(
     ],
     # Automatically discover all packages in the current directory tree.
     packages=find_packages(),
-    # Restrict installation to Python interpreters version 3.8 and above.
-    python_requires=">=3.8",
+    # Restrict installation to Python interpreters version 3.9 and above.
+    python_requires=">=3.9",
     # Define the console script entry point for the plans command.
     entry_points={
         # Map the console script group to the list of command definitions.
@@ -127,9 +127,8 @@ setup(
         "Operating System :: OS Independent",
         # Declare support for Python 3 as the language major version.
         "Programming Language :: Python :: 3",
-        # Declare explicit compatibility with Python version 3.8.
-        "Programming Language :: Python :: 3.8",
         # Declare explicit compatibility with Python version 3.9.
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.9",
         # Declare explicit compatibility with Python version 3.10.
         "Programming Language :: Python :: 3.10",

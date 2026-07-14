@@ -36,7 +36,7 @@ FILE VERSION         : 1.0.0
 
 STATUS               : Stable
 
-PYTHON               : >=3.8
+PYTHON               : >=3.9
 
 LICENSE              : GPL-3.0-only
 
