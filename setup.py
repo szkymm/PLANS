@@ -73,7 +73,7 @@ from setuptools import setup, find_packages
 # Invoke setuptools with the project metadata and packaging configuration.
 setup(
     # Declare the package name used for PyPI registration and pip install.
-    name="PLANS",
+    name="pyplans",
     # Declare the semantic version following major.minor.patch convention.
     version="0.1.1",
     # Provide a brief description of the tool for PyPI and help text.
@@ -140,8 +140,6 @@ setup(
         "Programming Language :: Python :: 3.13",
         # Declare explicit compatibility with Python version 3.14.
         "Programming Language :: Python :: 3.14",
-        # Categorize the package under project management tools.
-        "Topic :: Software Development :: Project Management",
         # Additionally categorize as a reusable Python library module.
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],

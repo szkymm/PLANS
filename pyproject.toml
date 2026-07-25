@@ -3,7 +3,7 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "PLANS"
+name = "pyplans"
 version = "0.1.1"
 description = "Priority Logs Actions Notes Stracks -- Local-first project management stack system."
 readme = "README.md"
@@ -32,7 +32,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
-    "Topic :: Software Development :: Project Management",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 requires-python = ">=3.9"
