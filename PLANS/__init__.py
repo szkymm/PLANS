@@ -27,7 +27,7 @@ PROJECT CREATE DATE  : 2026-07-15
 
 PROJECT VERSION DATE : 2026-07-15
 
-PROJECT VERSION      : 0.1.1
+PROJECT VERSION      : 0.1.2
 
 
 FILE CREATE DATE     : 2026-07-15
@@ -52,7 +52,7 @@ USAGE                :
     database = DatabaseManager("plans.db")
     database.initialize_schema()
     strack_manager = StrackManager(database)
-    strack_manager.create_strack("my-project", "My First Project")
+    strack_manager.insert_strack_record("my-project", "My First Project")
 
 ====================
 THIS PROGRAM IS LICENSED UNDER GPL-3.0-only LICENSE.
@@ -76,14 +76,20 @@ Sort License:
 """
 
 # Define the package version string to match PROJECT VERSION in docstring.
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 # Export the database manager and entity managers as the public API surface.
 __all__ = [
+    # Expose the DatabaseManager for programmatic database control.
     "DatabaseManager",
+    # Expose the StrackManager for Strack entity CRUD operations.
     "StrackManager",
+    # Expose the PlanManager for Plan entity CRUD operations.
     "PlanManager",
+    # Expose the IssueManager for Issue entity CRUD operations.
     "IssueManager",
+    # Expose the ActionManager for Action entity CRUD operations.
     "ActionManager",
+    # Expose the NoteManager for Note entity CRUD operations.
     "NoteManager",
 ]
 

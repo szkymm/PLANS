@@ -25,7 +25,7 @@ PROJECT CREATE DATE  : 2026-07-15
 
 PROJECT VERSION DATE : 2026-07-15
 
-PROJECT VERSION      : 0.1.1
+PROJECT VERSION      : 0.1.2
 
 
 FILE CREATE DATE     : 2026-07-15
@@ -75,7 +75,7 @@ setup(
     # Declare the package name used for PyPI registration and pip install.
     name="pyplans",
     # Declare the semantic version following major.minor.patch convention.
-    version="0.1.1",
+    version="0.1.2",
     # Provide a brief description of the tool for PyPI and help text.
     description="Priority Logs Actions Notes Stracks -- Local-first project management stack system.",
     # Identify the primary author of the package.

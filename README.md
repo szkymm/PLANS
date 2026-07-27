@@ -35,6 +35,7 @@ plans <project> init
 plans <project> strack create <id> <title> [--description DESC] [--priority N]
 plans <project> strack list [--status active|archived]
 plans <project> strack show <id>
+plans <project> strack update <id> [--status active|archived] [--title TITLE] [--description DESC] [--priority N]
 plans <project> strack delete <id>
 
 # ── Plan (todo) ──
@@ -110,6 +111,7 @@ plans <project> init
 plans <project> strack create <id> <title> [--description DESC] [--priority N]
 plans <project> strack list [--status active|archived]
 plans <project> strack show <id>
+plans <project> strack update <id> [--status active|archived] [--title TITLE] [--description DESC] [--priority N]
 plans <project> strack delete <id>
 
 # ── Plan（待办事项）──

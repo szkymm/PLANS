@@ -26,7 +26,7 @@ PROJECT CREATE DATE  : 2026-07-15
 
 PROJECT VERSION DATE : 2026-07-15
 
-PROJECT VERSION      : 0.1.1
+PROJECT VERSION      : 0.1.2
 
 
 FILE CREATE DATE     : 2026-07-15
@@ -51,12 +51,12 @@ USAGE                :
     database = DatabaseManager("plans.db")
     database.initialize_schema()
     plan_manager = PlanManager(database)
-    plan = plan_manager.create_plan(
+    plan = plan_manager.insert_plan_record(
         "project-1", "task-1", "Design REST API", "Draft endpoints", 2
     )
     active_plans = plan_manager.list_plans(status_value="in_progress")
-    plan_manager.update_plan("task-1", Status="done")
-    plan_manager.delete_plan("task-1")
+    plan_manager.modify_plan_fields("task-1", Status="done")
+    plan_manager.erase_plan_record("task-1")
 
 ====================
 
@@ -81,7 +81,7 @@ Sort License:
 """
 
 # Define the file version string to match FILE VERSION in docstring.
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 # Import datetime for UTC-aware timestamp generation in create and update flows.
 from datetime import datetime, timezone
@@ -95,7 +95,7 @@ from .database import DatabaseManager
 
 class PlanManager:
     """
-    PLANMANAGER CLASS IS CORE PART OF PLANS plan.
+    PlanManager CLASS IS CORE PART OF PLANS plan.
 
     PLANS.plan.PlanManager:
         Manages Plan (todo) entities with full CRUD lifecycle including
@@ -107,33 +107,34 @@ class PlanManager:
             manager providing SQLite connection access for all SQL operations.
 
     PUBLIC METHODS                     :
-        create_plan(strack_id, plan_id, plan_title, plan_description, priority_level) -> Dict[str, Any]:
+        insert_plan_record(strack_id, plan_id, plan_title,
+            plan_description, priority_level) -> Dict[str, Any]:
             Insert a new Plan row into the Plans table and return the created
             record as a dictionary with PascalCase keys.
-        get_plan(plan_id) -> Optional[Dict[str, Any]]:
+        retrieve_plan(plan_id) -> Optional[Dict[str, Any]]:
             Retrieve a single Plan by its unique identifier, returning None
             when no matching row is found.
         list_plans(strack_id, status_value) -> List[Dict[str, Any]]:
             Return all Plan rows optionally filtered by parent Strack identifier
             or by current status value.
-        update_plan(plan_id, **update_kwargs) -> Dict[str, Any]:
+        modify_plan_fields(plan_id, **update_kwargs) -> Dict[str, Any]:
             Update specified PascalCase fields of an existing Plan row and
             return the refreshed record after applying changes.
-        delete_plan(plan_id) -> bool:
+        erase_plan_record(plan_id) -> bool:
             Remove a Plan row by its unique identifier and indicate whether
             at least one row was actually deleted.
 
     PRIVATE METHODS                    :
-        _init_generate_timestamp_function_() -> str:
+        _init_form_timestamp_function_() -> str:
             Produce an ISO 8601 UTC timestamp string for populating CreatedAt
             and UpdatedAt columns during create and update operations.
 
     USAGE                             :
         manager = PlanManager(database_manager)
-        plan = manager.create_plan("proj-1", "p-1", "Design API", "", 2)
-        manager.update_plan("p-1", Status="in_progress")
+        plan = manager.insert_plan_record("proj-1", "p-1", "Design API", "", 2)
+        manager.modify_plan_fields("p-1", Status="in_progress")
         active = manager.list_plans(status_value="in_progress")
-        manager.delete_plan("p-1")
+        manager.erase_plan_record("p-1")
 
     WARNING                           :
         Private methods should not be called from outside the class.
@@ -155,25 +156,37 @@ class PlanManager:
         # Store the injected database manager for all subsequent SQL operations.
         self.database_manager = database_manager
 
-    def _init_generate_timestamp_function_(self) -> str:
+    def _init_form_timestamp_function_(self) -> str:
         """
         Generate the current UTC timestamp in ISO 8601 format.
 
         Captures the system UTC clock and formats it as a timezone-aware
         ISO 8601 string suitable for storage in CreatedAt and UpdatedAt.
+
+        The parameters are as follows:
+
+        :return: ISO 8601 formatted UTC timestamp string for database storage.
+        :rtype: str
         """
         # Capture the current moment in the UTC timezone for consistent storage.
         current_time = datetime.now(timezone.utc)
         # Return the ISO 8601 formatted string ready for database column storage.
         return current_time.isoformat()
 
-    def create_plan(
+    def insert_plan_record(
+        # Accept the class instance reference as the first implicit parameter.
         self,
+        # Declare the parent Strack container identifier parameter.
         strack_id: str,
+        # Declare the unique Plan identifier parameter.
         plan_id: str,
+        # Declare the display title for the Plan entity.
         plan_title: str,
+        # Declare the optional longer-form description with an empty string default.
         plan_description: str = "",
+        # Declare the numeric priority level with a default of three for medium urgency.
         priority_level: int = 3,
+    # Close the parameter list and declare the return type as a string-keyed dictionary.
     ) -> Dict[str, Any]:
         """
         Insert a new Plan row into the Plans table and return the created record.
@@ -203,39 +216,43 @@ class PlanManager:
         :return: Dictionary representation of the newly inserted Plan row with
             PascalCase keys for all columns.
         :rtype: Dict[str, Any]
-        :raise sqlite3.DatabaseError: When the database operation encounters a
-            generic low-level failure.
-        :raise sqlite3.IntegrityError: When a primary key constraint or foreign
-            key constraint is violated by the insert.
-        :raise sqlite3.OperationalError: When the database connection is
-            unavailable or the Plans table does not exist.
-        :raise Exception: When any other unexpected error occurs during the
-            insert operation.
         """
         # Clamp the priority level to the valid inclusive range of 1 through 5.
         if priority_level < 1:
             # Override values below the minimum with the lowest valid priority.
             priority_level = 1
+        # Clamp values above the maximum allowed priority to the ceiling of five.
         if priority_level > 5:
             # Override values above the maximum with the highest valid priority.
             priority_level = 5
         # Generate the current UTC timestamp for CreatedAt and UpdatedAt columns.
-        current_time = self._init_generate_timestamp_function_()
+        current_time = self._init_form_timestamp_function_()
         # Build the parameterised INSERT SQL targeting all seven Plan columns.
         insert_sql = (
+            # Start the INSERT column list with the primary identifier fields.
             "INSERT INTO Plans (Id, StrackId, Title, Description, "
+            # Continue the column list with status and timestamp columns.
             + "Status, Priority, CreatedAt, UpdatedAt) "
+            # Complete the INSERT with positional parameter placeholders.
             + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         )
         # Assemble the parameter tuple matching the column order in the INSERT.
         insert_params = (
+            # Bind the unique Plan identifier as the first positional parameter.
             plan_id,
+            # Bind the parent Strack identifier as the second positional parameter.
             strack_id,
+            # Bind the display title as the third positional parameter.
             plan_title,
+            # Bind the optional long-form description as the fourth positional parameter.
             plan_description,
+            # Bind the default pending status string as the fifth positional parameter.
             "pending",
+            # Bind the clamped priority level integer as the sixth positional parameter.
             priority_level,
+            # Bind the creation timestamp as the seventh positional parameter.
             current_time,
+            # Bind the same timestamp for the initial update time as the eighth parameter.
             current_time,
         )
         # Attempt to execute the parameterised INSERT against the Plans table.
@@ -246,50 +263,66 @@ class PlanManager:
             database_cursor.execute(insert_sql, insert_params)
             # Commit the transaction to persist the new Plan row to disk.
             self.database_manager.connection.commit()
-        except sqlite3.DatabaseError as database_error:
+        # Handle general database-level errors that prevent the INSERT from completing.
+        except sqlite3.DatabaseError as exception_error:
             # Build the Chinese-language error message with exception context.
             message_error = (
+                # Append the error type prefix with Chinese diagnostic text.
                 "[X] (DatabaseError) 数据库通用错误，插入计划失败: "
-                + str(database_error)
-            )
-            # Output the error message for the caller and diagnostic review.
-            print(message_error)
-            # Terminate the exception and signal failure with an empty dictionary.
-            return {}
-        except sqlite3.IntegrityError as integrity_error:
-            # Build the Chinese-language error message with exception context.
-            message_error = (
-                "[X] (IntegrityError) 数据完整性约束违反，"
-                + "计划 ID 或 Strack ID 可能重复或缺失: "
-                + str(integrity_error)
-            )
-            # Output the error message for the caller and diagnostic review.
-            print(message_error)
-            # Terminate the exception and signal failure with an empty dictionary.
-            return {}
-        except sqlite3.OperationalError as operational_error:
-            # Build the Chinese-language error message with exception context.
-            message_error = (
-                "[X] (OperationalError) 数据库操作错误，"
-                + "连接或表可能不可用: "
-                + str(operational_error)
-            )
-            # Output the error message for the caller and diagnostic review.
-            print(message_error)
-            # Terminate the exception and signal failure with an empty dictionary.
-            return {}
-        except Exception as exception_error:
-            # Build the Chinese-language error message for unanticipated errors.
-            message_error = (
-                "[X] (OtherError) 发生其他未知错误，插入计划失败: "
+                # Append the exception details to the error message for diagnostics.
                 + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
             print(message_error)
             # Terminate the exception and signal failure with an empty dictionary.
             return {}
-        # Build the SELECT SQL to retrieve the just-inserted Plan row.
-        select_sql = "SELECT Id, StrackId, Title, Description, Status, Priority, CreatedAt, UpdatedAt FROM Plans WHERE Id = ?"
+        # Handle integrity constraint violations such as duplicate primary keys.
+        except sqlite3.IntegrityError as exception_error:
+            # Build the Chinese-language error message with exception context.
+            message_error = (
+                # Append the error type prefix indicating an integrity violation.
+                "[X] (IntegrityError) 数据完整性约束违反，"
+                # Append the description of the likely constraint failure cause.
+                + "计划 ID 或 Strack ID 可能重复或缺失: "
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
+            )
+            # Output the error message for the caller and diagnostic review.
+            print(message_error)
+            # Terminate the exception and signal failure with an empty dictionary.
+            return {}
+        # Handle operational errors such as missing tables or locked databases.
+        except sqlite3.OperationalError as exception_error:
+            # Build the Chinese-language error message with exception context.
+            message_error = (
+                # Append the error type prefix with Chinese diagnostic text.
+                "[X] (OperationalError) 数据库操作错误，"
+                # Append the description indicating the table or connection may be unavailable.
+                + "连接或表可能不可用: "
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
+            )
+            # Output the error message for the caller and diagnostic review.
+            print(message_error)
+            # Terminate the exception and signal failure with an empty dictionary.
+            return {}
+        # Catch any unanticipated exception type as the final safety net.
+        except Exception as exception_error:
+            # Build the Chinese-language error message for unanticipated errors.
+            message_error = (
+                # Append the generic unknown error prefix with Chinese diagnostic text.
+                "[X] (OtherError) 发生其他未知错误，插入计划失败: "
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
+            )
+            # Output the error message for the caller and diagnostic review.
+            print(message_error)
+            # Terminate the exception and signal failure with an empty dictionary.
+            return {}
+        # Build the column list portion of the SELECT SQL for Plan retrieval.
+        select_sql = "SELECT Id, StrackId, Title, Description, Status, "
+        # Append remaining columns and WHERE clause for the Plan record.
+        select_sql += "Priority, CreatedAt, UpdatedAt FROM Plans WHERE Id = ?"
         # Attempt to fetch the inserted row back from the database.
         try:
             # Open a cursor on the database connection for the SELECT query.
@@ -298,31 +331,41 @@ class PlanManager:
             database_cursor.execute(select_sql, (plan_id,))
             # Fetch the single matching row from the cursor result set.
             result_row = database_cursor.fetchone()
-        except sqlite3.DatabaseError as database_error:
+        # Handle general database-level errors that prevent the SELECT from completing.
+        except sqlite3.DatabaseError as exception_error:
             # Build the Chinese-language error message with exception context.
             message_error = (
+                # Append the error type prefix with Chinese diagnostic text.
                 "[X] (DatabaseError) 数据库通用错误，无法获取新建计划: "
-                + str(database_error)
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
             print(message_error)
             # Terminate the exception and signal failure with an empty dictionary.
             return {}
-        except sqlite3.OperationalError as operational_error:
+        # Handle operational errors such as missing tables or locked databases.
+        except sqlite3.OperationalError as exception_error:
             # Build the Chinese-language error message with exception context.
             message_error = (
+                # Append the error type prefix with Chinese diagnostic text.
                 "[X] (OperationalError) 数据库操作错误，"
+                # Append the description indicating the SELECT query could not execute.
                 + "无法查询新建计划: "
-                + str(operational_error)
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
             print(message_error)
             # Terminate the exception and signal failure with an empty dictionary.
             return {}
+        # Catch any unanticipated exception type as the final safety net.
         except Exception as exception_error:
             # Build the Chinese-language error message for unanticipated errors.
             message_error = (
+                # Append the generic unknown error prefix with Chinese diagnostic text.
                 "[X] (OtherError) 发生其他未知错误，无法获取新建计划: "
+                # Append the exception details to the error message for diagnostics.
                 + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
@@ -335,19 +378,27 @@ class PlanManager:
             return {}
         # Convert the raw tuple into a dictionary with PascalCase column keys.
         query_result = {
-            "Id": result_row[0],
-            "StrackId": result_row[1],
+            # Map the first column to the unique Plan identifier key.
+            "ID": result_row[0],
+            # Map the second column to the parent Strack identifier key.
+            "StrackID": result_row[1],
+            # Map the third column to the display title key.
             "Title": result_row[2],
+            # Map the fourth column to the optional description key.
             "Description": result_row[3],
+            # Map the fifth column to the lifecycle status key.
             "Status": result_row[4],
+            # Map the sixth column to the priority level integer key.
             "Priority": result_row[5],
+            # Map the seventh column to the creation timestamp key.
             "CreatedAt": result_row[6],
+            # Map the eighth column to the last update timestamp key.
             "UpdatedAt": result_row[7],
         }
         # Return the fully constructed dictionary for the newly created Plan.
         return query_result
 
-    def get_plan(self, plan_id: str) -> Optional[Dict[str, Any]]:
+    def retrieve_plan(self, plan_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve a single Plan row by its unique identifier.
 
@@ -362,16 +413,12 @@ class PlanManager:
         :return: Dictionary with PascalCase keys representing the Plan row,
             or None when the identifier is not found.
         :rtype: Optional[Dict[str, Any]]
-        :raise sqlite3.DatabaseError: When the database operation encounters a
-            generic low-level failure.
-        :raise sqlite3.OperationalError: When the database connection is
-            unavailable or the Plans table does not exist.
-        :raise Exception: When any other unexpected error occurs during the
-            select operation.
         """
         # Build the parameterised SELECT SQL for the Plan by primary key.
         select_sql = (
+            # Start the SELECT statement with all Plan column names for retrieval.
             "SELECT Id, StrackId, Title, Description, Status, "
+            # Complete the column list and add the primary key WHERE clause.
             + "Priority, CreatedAt, UpdatedAt FROM Plans WHERE Id = ?"
         )
         # Attempt to execute the SELECT query with the plan identifier.
@@ -382,59 +429,81 @@ class PlanManager:
             database_cursor.execute(select_sql, (plan_id,))
             # Fetch the single matching row from the cursor result set.
             result_row = database_cursor.fetchone()
-        except sqlite3.DatabaseError as database_error:
+        # Handle general database-level errors that prevent the SELECT from completing.
+        except sqlite3.DatabaseError as exception_error:
             # Build the Chinese-language error message with exception context.
             message_error = (
+                # Append the error type prefix with Chinese diagnostic text.
                 "[X] (DatabaseError) 数据库通用错误，无法获取计划: "
-                + str(database_error)
-            )
-            # Output the error message for the caller and diagnostic review.
-            print(message_error)
-            # Terminate the exception by returning None to signal retrieval failure.
-            return None
-        except sqlite3.OperationalError as operational_error:
-            # Build the Chinese-language error message with exception context.
-            message_error = (
-                "[X] (OperationalError) 数据库操作错误，"
-                + "无法查询计划: "
-                + str(operational_error)
-            )
-            # Output the error message for the caller and diagnostic review.
-            print(message_error)
-            # Terminate the exception by returning None to signal retrieval failure.
-            return None
-        except Exception as exception_error:
-            # Build the Chinese-language error message for unanticipated errors.
-            message_error = (
-                "[X] (OtherError) 发生其他未知错误，无法获取计划: "
+                # Append the exception details to the error message for diagnostics.
                 + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
             print(message_error)
             # Terminate the exception by returning None to signal retrieval failure.
             return None
-        # Check whether the query produced a matching row from the database.
+        # Handle operational errors such as missing tables or locked databases.
+        except sqlite3.OperationalError as exception_error:
+            # Build the Chinese-language error message with exception context.
+            message_error = (
+                # Append the error type prefix with Chinese diagnostic text.
+                "[X] (OperationalError) 数据库操作错误，"
+                # Append the description indicating the SELECT query could not execute.
+                + "无法查询计划: "
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
+            )
+            # Output the error message for the caller and diagnostic review.
+            print(message_error)
+            # Terminate the exception by returning None to signal retrieval failure.
+            return None
+        # Catch any unanticipated exception type as the final safety net.
+        except Exception as exception_error:
+            # Build the Chinese-language error message for unanticipated errors.
+            message_error = (
+                # Append the generic unknown error prefix with Chinese diagnostic text.
+                "[X] (OtherError) 发生其他未知错误，无法获取计划: "
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
+            )
+            # Output the error message for the caller and diagnostic review.
+            print(message_error)
+            # Terminate the exception by returning None to signal retrieval failure.
+            return None
+        # Verify that the SELECT query returned a valid row from the cursor.
         if result_row is None:
             # Return None when no Plan exists with the requested identifier.
             return None
         # Convert the raw cursor tuple into a dictionary with PascalCase keys.
         query_result = {
-            "Id": result_row[0],
-            "StrackId": result_row[1],
+            # Map the first column to the unique Plan identifier key.
+            "ID": result_row[0],
+            # Map the second column to the parent Strack identifier key.
+            "StrackID": result_row[1],
+            # Map the third column to the display title key.
             "Title": result_row[2],
+            # Map the fourth column to the optional description key.
             "Description": result_row[3],
+            # Map the fifth column to the lifecycle status key.
             "Status": result_row[4],
+            # Map the sixth column to the priority level integer key.
             "Priority": result_row[5],
+            # Map the seventh column to the creation timestamp key.
             "CreatedAt": result_row[6],
+            # Map the eighth column to the last update timestamp key.
             "UpdatedAt": result_row[7],
         }
         # Return the constructed dictionary representing the retrieved Plan row.
         return query_result
 
     def list_plans(
+        # Accept the class instance reference as the first implicit parameter.
         self,
+        # Declare the optional parent Strack identifier for result filtering.
         strack_id: Optional[str] = None,
+        # Declare the optional status value for filtering Plan lifecycle stages.
         status_value: Optional[str] = None,
+    # Close the parameter list and declare the return type as a list of dictionaries.
     ) -> List[Dict[str, Any]]:
         """
         Return all Plan rows optionally filtered by Strack or status.
@@ -454,12 +523,6 @@ class PlanManager:
         :return: List of Plan dictionaries with PascalCase keys, possibly empty
             when no rows match the applied filters.
         :rtype: List[Dict[str, Any]]
-        :raise sqlite3.DatabaseError: When the database operation encounters a
-            generic low-level failure.
-        :raise sqlite3.OperationalError: When the database connection is
-            unavailable or the Plans table does not exist.
-        :raise Exception: When any other unexpected error occurs during the
-            select operation.
         """
         # Detect whether a Strack identifier filter has been provided.
         has_strack = strack_id is not None
@@ -467,7 +530,9 @@ class PlanManager:
         has_status = status_value is not None
         # Start building the base SELECT query targeting all Plan columns.
         query_sql = (
+            # Begin the SELECT statement with all Plan column names.
             "SELECT Id, StrackId, Title, Description, Status, "
+            # Complete the column list from the Plans table without any filter.
             + "Priority, CreatedAt, UpdatedAt FROM Plans"
         )
         # Initialise the empty parameter list for the dynamic WHERE clauses.
@@ -484,6 +549,7 @@ class PlanManager:
             if has_strack:
                 # Extend the existing WHERE clause with an AND conjunction.
                 query_sql += " AND Status = ?"
+            # Start a new WHERE clause when no prior Strack filter was applied.
             else:
                 # Start a new WHERE clause with the Status filter as the first condition.
                 query_sql += " WHERE Status = ?"
@@ -498,32 +564,42 @@ class PlanManager:
             # Execute the parameterised SELECT with the accumulated bindings.
             database_cursor.execute(query_sql, query_params)
             # Fetch all matching rows from the cursor result set.
-            result_rows = database_cursor.fetchall()
-        except sqlite3.DatabaseError as database_error:
+            result_records = database_cursor.fetchall()
+        # Handle general database-level errors that prevent the SELECT from completing.
+        except sqlite3.DatabaseError as exception_error:
             # Build the Chinese-language error message with exception context.
             message_error = (
+                # Append the error type prefix with Chinese diagnostic text.
                 "[X] (DatabaseError) 数据库通用错误，无法列出计划: "
-                + str(database_error)
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
             print(message_error)
             # Terminate the exception by returning an empty list as the fallback.
             return []
-        except sqlite3.OperationalError as operational_error:
+        # Handle operational errors such as missing tables or locked databases.
+        except sqlite3.OperationalError as exception_error:
             # Build the Chinese-language error message with exception context.
             message_error = (
+                # Append the error type prefix with Chinese diagnostic text.
                 "[X] (OperationalError) 数据库操作错误，"
+                # Append the description indicating the list query could not execute.
                 + "无法查询计划列表: "
-                + str(operational_error)
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
             print(message_error)
             # Terminate the exception by returning an empty list as the fallback.
             return []
+        # Catch any unanticipated exception type as the final safety net.
         except Exception as exception_error:
             # Build the Chinese-language error message for unanticipated errors.
             message_error = (
+                # Append the generic unknown error prefix with Chinese diagnostic text.
                 "[X] (OtherError) 发生其他未知错误，无法列出计划: "
+                # Append the exception details to the error message for diagnostics.
                 + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
@@ -533,16 +609,24 @@ class PlanManager:
         # Initialise the output list for collecting converted Plan dictionaries.
         list_result = []
         # Iterate over each raw tuple returned by the SELECT query.
-        for result_row in result_rows:
+        for result_row in result_records:
             # Convert the raw cursor tuple into a dictionary with PascalCase keys.
             query_result = {
-                "Id": result_row[0],
-                "StrackId": result_row[1],
+                # Map the first column to the unique Plan identifier key.
+                "ID": result_row[0],
+                # Map the second column to the parent Strack identifier key.
+                "StrackID": result_row[1],
+                # Map the third column to the display title key.
                 "Title": result_row[2],
+                # Map the fourth column to the optional description key.
                 "Description": result_row[3],
+                # Map the fifth column to the lifecycle status key.
                 "Status": result_row[4],
+                # Map the sixth column to the priority level integer key.
                 "Priority": result_row[5],
+                # Map the seventh column to the creation timestamp key.
                 "CreatedAt": result_row[6],
+                # Map the eighth column to the last update timestamp key.
                 "UpdatedAt": result_row[7],
             }
             # Append the constructed dictionary to the accumulating result list.
@@ -550,7 +634,7 @@ class PlanManager:
         # Return the complete list of Plan dictionaries matching the filters.
         return list_result
 
-    def update_plan(self, plan_id: str, **update_kwargs: Any) -> Dict[str, Any]:
+    def modify_plan_fields(self, plan_id: str, **update_kwargs: Any) -> Dict[str, Any]:
         """
         Update specified fields of an existing Plan and return the refreshed record.
 
@@ -568,14 +652,6 @@ class PlanManager:
         :return: Dictionary representation of the Plan row after the update,
             or an empty dictionary when no matching Plan exists.
         :rtype: Dict[str, Any]
-        :raise sqlite3.DatabaseError: When the database operation encounters a
-            generic low-level failure.
-        :raise sqlite3.IntegrityError: When a foreign key or other constraint
-            is violated by the update.
-        :raise sqlite3.OperationalError: When the database connection is
-            unavailable or the Plans table does not exist.
-        :raise Exception: When any other unexpected error occurs during the
-            update operation.
         """
         # Define the set of PascalCase column names permitted for field updates.
         allowed_columns = {"Title", "Description", "Status", "Priority"}
@@ -604,7 +680,7 @@ class PlanManager:
         # Append the UpdatedAt timestamp clause so it is always refreshed.
         set_clauses.append("UpdatedAt = ?")
         # Generate the current UTC timestamp for the UpdatedAt column value.
-        current_time = self._init_generate_timestamp_function_()
+        current_time = self._init_form_timestamp_function_()
         # Append the fresh timestamp string to the parameter list.
         update_params.append(current_time)
         # Append the plan identifier as the final parameter for the WHERE clause.
@@ -619,42 +695,56 @@ class PlanManager:
             database_cursor.execute(update_sql, update_params)
             # Commit the transaction to persist the modified Plan row to disk.
             self.database_manager.connection.commit()
-        except sqlite3.DatabaseError as database_error:
+        # Handle general database-level errors that prevent the UPDATE from completing.
+        except sqlite3.DatabaseError as exception_error:
             # Build the Chinese-language error message with exception context.
             message_error = (
+                # Append the error type prefix with Chinese diagnostic text.
                 "[X] (DatabaseError) 数据库通用错误，更新计划失败: "
-                + str(database_error)
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
             print(message_error)
             # Terminate the exception and signal failure with an empty dictionary.
             return {}
-        except sqlite3.IntegrityError as integrity_error:
+        # Handle integrity constraint violations that may occur during the update.
+        except sqlite3.IntegrityError as exception_error:
             # Build the Chinese-language error message with exception context.
             message_error = (
+                # Append the error type prefix indicating an integrity violation.
                 "[X] (IntegrityError) 数据完整性约束违反，"
+                # Append the description of the update failure context.
                 + "更新计划失败: "
-                + str(integrity_error)
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
             print(message_error)
             # Terminate the exception and signal failure with an empty dictionary.
             return {}
-        except sqlite3.OperationalError as operational_error:
+        # Handle operational errors such as missing tables or locked databases.
+        except sqlite3.OperationalError as exception_error:
             # Build the Chinese-language error message with exception context.
             message_error = (
+                # Append the error type prefix with Chinese diagnostic text.
                 "[X] (OperationalError) 数据库操作错误，"
+                # Append the description of the update failure context.
                 + "更新计划失败: "
-                + str(operational_error)
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
             print(message_error)
             # Terminate the exception and signal failure with an empty dictionary.
             return {}
+        # Catch any unanticipated exception type as the final safety net.
         except Exception as exception_error:
             # Build the Chinese-language error message for unanticipated errors.
             message_error = (
+                # Append the generic unknown error prefix with Chinese diagnostic text.
                 "[X] (OtherError) 发生其他未知错误，更新计划失败: "
+                # Append the exception details to the error message for diagnostics.
                 + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
@@ -662,9 +752,9 @@ class PlanManager:
             # Terminate the exception and signal failure with an empty dictionary.
             return {}
         # Re-fetch the updated Plan row to return current state to the caller.
-        return self.get_plan(plan_id) or {}
+        return self.retrieve_plan(plan_id) or {}
 
-    def delete_plan(self, plan_id: str) -> bool:
+    def erase_plan_record(self, plan_id: str) -> bool:
         """
         Remove a Plan row from the Plans table by its unique identifier.
 
@@ -678,12 +768,6 @@ class PlanManager:
         :type plan_id: str
         :return: True when at least one row was deleted, False otherwise.
         :rtype: bool
-        :raise sqlite3.DatabaseError: When the database operation encounters a
-            generic low-level failure.
-        :raise sqlite3.OperationalError: When the database connection is
-            unavailable or the Plans table does not exist.
-        :raise Exception: When any other unexpected error occurs during the
-            delete operation.
         """
         # Build the parameterised DELETE SQL targeting the Plan by primary key.
         delete_sql = "DELETE FROM Plans WHERE Id = ?"
@@ -697,31 +781,41 @@ class PlanManager:
             self.database_manager.connection.commit()
             # Capture the count of rows affected by the DELETE execution.
             success_count = database_cursor.rowcount
-        except sqlite3.DatabaseError as database_error:
+        # Handle general database-level errors that prevent the DELETE from completing.
+        except sqlite3.DatabaseError as exception_error:
             # Build the Chinese-language error message with exception context.
             message_error = (
+                # Append the error type prefix with Chinese diagnostic text.
                 "[X] (DatabaseError) 数据库通用错误，删除计划失败: "
-                + str(database_error)
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
             print(message_error)
             # Terminate the exception and signal that no rows were deleted.
             return False
-        except sqlite3.OperationalError as operational_error:
+        # Handle operational errors such as missing tables or locked databases.
+        except sqlite3.OperationalError as exception_error:
             # Build the Chinese-language error message with exception context.
             message_error = (
+                # Append the error type prefix with Chinese diagnostic text.
                 "[X] (OperationalError) 数据库操作错误，"
+                # Append the description of the deletion failure context.
                 + "删除计划失败: "
-                + str(operational_error)
+                # Append the exception details to the error message for diagnostics.
+                + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.
             print(message_error)
             # Terminate the exception and signal that no rows were deleted.
             return False
+        # Catch any unanticipated exception type as the final safety net.
         except Exception as exception_error:
             # Build the Chinese-language error message for unanticipated errors.
             message_error = (
+                # Append the generic unknown error prefix with Chinese diagnostic text.
                 "[X] (OtherError) 发生其他未知错误，删除计划失败: "
+                # Append the exception details to the error message for diagnostics.
                 + str(exception_error)
             )
             # Output the error message for the caller and diagnostic review.

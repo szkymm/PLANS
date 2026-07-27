@@ -25,7 +25,7 @@ PROJECT CREATE DATE  : 2026-07-15
 
 PROJECT VERSION DATE : 2026-07-15
 
-PROJECT VERSION      : 0.1.1
+PROJECT VERSION      : 0.1.2
 
 
 FILE CREATE DATE     : 2026-07-15
@@ -78,12 +78,12 @@ import os
 from datetime import datetime, timezone
 
 # Define the module version synchronized with the project version in the docstring.
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 
 class DatabaseManager:
     """
-    DATABASEMANAGER CLASS IS CORE PART OF PLANS database.
+    DatabaseManager CLASS IS CORE PART OF PLANS DATABASE.PY.
 
     PLANS.database.DatabaseManager:
         Manages SQLite database connections, schema initialization, and provides
@@ -91,18 +91,33 @@ class DatabaseManager:
 
     ATTRIBUTES                         :
         database_path (str): Absolute or relative filesystem path to the SQLite database file.
-        database_connection (sqlite3.Connection or None): Active SQLite connection object or None when closed.
+        database_connection (sqlite3.Connection or None): Active
+            SQLite connection object or None when closed.
 
     PUBLIC METHODS                     :
         __init__(database_path: str) -> None:
             Initialize the database manager with a configurable file path.
         initialize_schema() -> None:
             Open the database, create all five entity tables, and close the connection.
+        run_sql_statement(sql_statement: str, query_parameters: Optional[tuple]) -> sqlite3.Cursor:
+            Execute a SQL statement with optional parameters via the database connection.
+        insert_record(table_name: str, record_data: dict) -> int:
+            Insert a row into the specified table using a dictionary of column values.
+        modify_table_record(table_name: str, record_data: dict, where_condition: str) -> None:
+            Update rows in a table matching the given WHERE condition.
+        purge_table_record(table_name: str, where_condition: str) -> int:
+            Delete rows from a table matching the given WHERE condition.
+        fetchone(sql_statement: str, query_parameters: Optional[tuple]) -> Optional[tuple]:
+            Execute a query and return the first matching row.
+        fetchall(sql_statement: str, query_parameters: Optional[tuple]) -> list:
+            Execute a query and return all matching rows as a list of tuples.
+        select_records(table_name: str, filter_condition: Union[dict, str]) -> list:
+            Select rows from a table matching the given filter.
 
     PRIVATE METHODS                    :
-        _init_open_connection_function_() -> None:
+        _init_open_link_function_() -> None:
             Open or create the SQLite database and enable WAL mode with foreign keys.
-        _init_close_connection_function_() -> None:
+        _init_close_link_function_() -> None:
             Close the active database connection and reset the attribute to None.
         _init_create_tables_function_() -> None:
             Execute all CREATE TABLE statements for the five entity tables.
@@ -148,11 +163,11 @@ class DatabaseManager:
         # Open the connection if it has not been established yet.
         if self.database_connection is None:
             # Establish the database connection via the private opener method.
-            self._init_open_connection_function_()
+            self._init_open_link_function_()
         # Return the active database connection reference.
         return self.database_connection
 
-    def _init_open_connection_function_(self):
+    def _init_open_link_function_(self):
         """
         Open or create the SQLite database connection.
 
@@ -169,7 +184,7 @@ class DatabaseManager:
         # Configure rows to be accessible by column name for readability.
         self.database_connection.row_factory = sqlite3.Row
 
-    def _init_close_connection_function_(self):
+    def _init_close_link_function_(self):
         """
         Close the active database connection gracefully.
 
@@ -183,7 +198,7 @@ class DatabaseManager:
             # Reset the connection attribute to None for safety.
             self.database_connection = None
 
-    def execute(self, sql_statement, parameters=None):
+    def run_sql_statement(self, sql_statement, query_parameters=None):
         """
         Execute a SQL statement with optional parameters via the database connection.
 
@@ -194,17 +209,17 @@ class DatabaseManager:
 
         :param sql_statement: The SQL statement string to execute.
         :type sql_statement: str
-        :param parameters: Optional tuple or dict of parameter bindings.
-        :type parameters: Optional[tuple]
+        :param query_parameters: Optional tuple or dict of parameter bindings.
+        :type query_parameters: Optional[tuple]
         :return: The cursor object after executing the statement.
         :rtype: sqlite3.Cursor
         """
         # Obtain the active database connection through the property accessor.
         database_connection = self.connection
         # Execute with parameter bindings when parameters are provided.
-        if parameters is not None:
+        if query_parameters is not None:
             # Bind parameters to the statement and execute against the database.
-            return database_connection.execute(sql_statement, parameters)
+            return database_connection.execute(sql_statement, query_parameters)
         # Execute the statement without parameter bindings for DDL or simple queries.
         return database_connection.execute(sql_statement)
 
@@ -234,18 +249,24 @@ class DatabaseManager:
         list_values = [record_data[col] for col in list_columns]
         # Build the full INSERT statement with column names and placeholders.
         string_sql = "INSERT INTO "
+        # Append the target table name to the INSERT prefix.
         string_sql += table_name
+        # Append the opening parenthesis and column list for the INSERT.
         string_sql += " ("
+        # Append the comma-separated column name string for the INSERT.
         string_sql += string_columns
+        # Append the closing parenthesis and VALUES keyword with opening parenthesis.
         string_sql += ") VALUES ("
+        # Append the comma-separated placeholder string for parameter binding.
         string_sql += string_placeholders
+        # Append the closing parenthesis to complete the INSERT statement.
         string_sql += ")"
-        # Execute the insert statement via the unified execute method.
-        self.execute(string_sql, tuple(list_values))
+        # Execute the insert statement via the unified run_sql_statement method.
+        self.run_sql_statement(string_sql, tuple(list_values))
         # Commit the transaction to persist the inserted row.
         self.connection.commit()
 
-    def update_record(self, table_name, record_data, where_condition):
+    def modify_table_record(self, table_name, record_data, where_condition):
         """
         Update rows in a table matching the given WHERE condition.
 
@@ -264,24 +285,62 @@ class DatabaseManager:
         # Collect the column names from the record data dictionary keys.
         list_columns = list(record_data.keys())
         # Build the SET clause with placeholders for parameterized binding.
-        list_set_parts = [f"{col} = ?" for col in list_columns]
+        list_setclauses = [f"{col} = ?" for col in list_columns]
         # Combine the SET clauses into a comma-separated string.
-        string_set = ", ".join(list_set_parts)
+        string_set = ", ".join(list_setclauses)
         # Collect the new values in column order for parameter binding.
         list_values = [record_data[col] for col in list_columns]
         # Build the full UPDATE statement with SET and WHERE clauses.
         string_sql = "UPDATE "
+        # Append the target table name to the UPDATE prefix.
         string_sql += table_name
+        # Append the SET keyword for the update clause.
         string_sql += " SET "
+        # Append the comma-separated column assignment string.
         string_sql += string_set
+        # Append the WHERE keyword for the filter clause.
         string_sql += " WHERE "
+        # Append the WHERE condition string to identify target rows.
         string_sql += where_condition
         # Execute the UPDATE statement with the assembled parameters.
-        self.execute(string_sql, tuple(list_values))
+        self.run_sql_statement(string_sql, tuple(list_values))
         # Commit the transaction to persist the updated row.
         self.connection.commit()
 
-    def fetchone(self, sql_statement, parameters=None):
+    def purge_table_record(self, table_name, where_condition):
+        """
+        Delete rows from a table matching the given WHERE condition.
+
+        Builds a DELETE statement with the WHERE condition string,
+        executes it, and commits the transaction.
+
+        The parameters are as follows:
+
+        :param table_name: The target table name for the delete operation.
+        :type table_name: str
+        :param where_condition: The raw SQL WHERE clause string identifying target rows.
+        :type where_condition: str
+        :return: The number of rows affected by the delete operation.
+        :rtype: int
+        """
+        # Build the DELETE statement for the target table with WHERE condition.
+        string_sql = "DELETE FROM "
+        # Append the target table name to the DELETE FROM prefix.
+        string_sql += table_name
+        # Append the WHERE keyword for the filter clause.
+        string_sql += " WHERE "
+        # Append the WHERE condition string to identify target rows.
+        string_sql += where_condition
+        # Execute the DELETE statement against the database.
+        cursor_result = self.run_sql_statement(string_sql)
+        # Retrieve the number of rows affected by the deletion.
+        int_rowcount = cursor_result.rowcount
+        # Commit the transaction to persist the deleted rows.
+        self.connection.commit()
+        # Return the count of affected rows for caller verification.
+        return int_rowcount
+
+    def fetchone(self, sql_statement, query_parameters=None):
         """
         Execute a query and return the first matching row.
 
@@ -292,17 +351,17 @@ class DatabaseManager:
 
         :param sql_statement: The SELECT SQL statement string.
         :type sql_statement: str
-        :param parameters: Optional tuple of parameter bindings.
-        :type parameters: Optional[tuple]
+        :param query_parameters: Optional tuple of parameter bindings.
+        :type query_parameters: Optional[tuple]
         :return: The first result row tuple, or None.
         :rtype: Optional[tuple]
         """
-        # Execute the query statement via the unified execute method.
-        cursor_result = self.execute(sql_statement, parameters)
+        # Execute the query statement via the unified run_sql_statement method.
+        cursor_result = self.run_sql_statement(sql_statement, query_parameters)
         # Fetch and return the first row from the result set.
         return cursor_result.fetchone()
 
-    def fetchall(self, sql_statement, parameters=None):
+    def fetchall(self, sql_statement, query_parameters=None):
         """
         Execute a query and return all matching rows as a list of tuples.
 
@@ -313,13 +372,13 @@ class DatabaseManager:
 
         :param sql_statement: The SELECT SQL statement string.
         :type sql_statement: str
-        :param parameters: Optional tuple of parameter bindings.
-        :type parameters: Optional[tuple]
+        :param query_parameters: Optional tuple of parameter bindings.
+        :type query_parameters: Optional[tuple]
         :return: A list of result row tuples.
         :rtype: list
         """
-        # Execute the query statement via the unified execute method.
-        cursor_result = self.execute(sql_statement, parameters)
+        # Execute the query statement via the unified run_sql_statement method.
+        cursor_result = self.run_sql_statement(sql_statement, query_parameters)
         # Fetch and return all rows from the result set as a list.
         return cursor_result.fetchall()
 
@@ -352,7 +411,7 @@ class DatabaseManager:
             # Collect the filter values in column order.
             list_values = [filter_condition[col] for col in list_columns]
             # Execute the parameterized query with filter values.
-            cursor_result = self.execute(string_sql, tuple(list_values))
+            cursor_result = self.run_sql_statement(string_sql, tuple(list_values))
             # Return all rows from the result set.
             return cursor_result.fetchall()
         # Handle string-based filter as a raw WHERE clause.
@@ -360,7 +419,7 @@ class DatabaseManager:
             # Append the raw WHERE clause string to the base statement.
             string_sql += " WHERE " + filter_condition
         # Execute the query without parameter bindings for raw string filters.
-        cursor_result = self.execute(string_sql)
+        cursor_result = self.run_sql_statement(string_sql)
         # Return all rows from the result set.
         return cursor_result.fetchall()
 
@@ -372,24 +431,106 @@ class DatabaseManager:
         Issues, Actions, and Notes tables with appropriate column definitions,
         constraints, and foreign key relationships.
         """
-        # Define the SQL to create the Stracks strategic tracks table with full schema constraints.
-        sql_stracks = "CREATE TABLE IF NOT EXISTS Stracks (Id TEXT PRIMARY KEY, Title TEXT NOT NULL, Description TEXT DEFAULT '', Priority INTEGER DEFAULT 3 CHECK(Priority BETWEEN 1 AND 5), Status TEXT DEFAULT 'active' CHECK(Status IN ('active','archived')), CreatedAt TEXT NOT NULL, UpdatedAt TEXT NOT NULL)"
+        # Build the SQL CREATE statement for the Stracks table.
+        sql_stracks = "CREATE TABLE IF NOT EXISTS Stracks ("
+        # Append the identifier and title column definitions.
+        sql_stracks += "Id TEXT PRIMARY KEY, Title TEXT NOT NULL, "
+        # Append the description column with an empty default value.
+        sql_stracks += "Description TEXT DEFAULT '', "
+        # Append the priority column with its data type and default.
+        sql_stracks += "Priority INTEGER DEFAULT 3 "
+        # Append the CHECK constraint for the allowed priority range.
+        sql_stracks += "CHECK(Priority BETWEEN 1 AND 5), "
+        # Append the status column with its data type and default.
+        sql_stracks += "Status TEXT DEFAULT 'active' "
+        # Append the CHECK constraint for allowed status values.
+        sql_stracks += "CHECK(Status IN ('active','archived')), "
+        # Append the timestamp columns for record tracking.
+        sql_stracks += "CreatedAt TEXT NOT NULL, UpdatedAt TEXT NOT NULL)"
         # Execute the Stracks table creation statement against the database connection.
         self.database_connection.execute(sql_stracks)
-        # Define the SQL to create the Plans project plans table with foreign key and status constraints.
-        sql_plans = "CREATE TABLE IF NOT EXISTS Plans (Id TEXT PRIMARY KEY, StrackId TEXT NOT NULL REFERENCES Stracks(Id) ON DELETE CASCADE, Title TEXT NOT NULL, Description TEXT DEFAULT '', Status TEXT DEFAULT 'pending' CHECK(Status IN ('pending','in_progress','done','blocked')), Priority INTEGER DEFAULT 3 CHECK(Priority BETWEEN 1 AND 5), CreatedAt TEXT NOT NULL, UpdatedAt TEXT NOT NULL)"
+        # Build the SQL CREATE statement for the Plans table.
+        sql_plans = "CREATE TABLE IF NOT EXISTS Plans ("
+        # Append the identifier and foreign key column definitions.
+        sql_plans += "Id TEXT PRIMARY KEY, StrackId TEXT NOT NULL "
+        # Append the foreign key reference clause with cascade delete.
+        sql_plans += "REFERENCES Stracks(Id) ON DELETE CASCADE, "
+        # Append the title column with a NOT NULL constraint.
+        sql_plans += "Title TEXT NOT NULL, "
+        # Append the description column with an empty default value.
+        sql_plans += "Description TEXT DEFAULT '', "
+        # Append the status column with its data type and default.
+        sql_plans += "Status TEXT DEFAULT 'pending' "
+        # Append the CHECK constraint for allowed status values.
+        sql_plans += "CHECK(Status IN ('pending','in_progress',"
+        # Append the remaining allowed status enumeration values.
+        sql_plans += "'done','blocked')), "
+        # Append the priority column with its data type and default.
+        sql_plans += "Priority INTEGER DEFAULT 3 "
+        # Append the CHECK constraint for the allowed priority range.
+        sql_plans += "CHECK(Priority BETWEEN 1 AND 5), "
+        # Append the timestamp columns for record tracking.
+        sql_plans += "CreatedAt TEXT NOT NULL, UpdatedAt TEXT NOT NULL)"
         # Execute the Plans table creation statement against the database connection.
         self.database_connection.execute(sql_plans)
-        # Define the SQL to create the Issues tracking table with severity classification.
-        sql_issues = "CREATE TABLE IF NOT EXISTS Issues (Id TEXT PRIMARY KEY, StrackId TEXT NOT NULL REFERENCES Stracks(Id) ON DELETE CASCADE, Title TEXT NOT NULL, Description TEXT DEFAULT '', Status TEXT DEFAULT 'open' CHECK(Status IN ('open','in_progress','resolved','closed')), Severity TEXT DEFAULT 'medium' CHECK(Severity IN ('critical','high','medium','low')), CreatedAt TEXT NOT NULL, UpdatedAt TEXT NOT NULL)"
+        # Build the SQL CREATE statement for the Issues table.
+        sql_issues = "CREATE TABLE IF NOT EXISTS Issues ("
+        # Append the identifier and foreign key column definitions.
+        sql_issues += "Id TEXT PRIMARY KEY, StrackId TEXT NOT NULL "
+        # Append the foreign key reference clause with cascade delete.
+        sql_issues += "REFERENCES Stracks(Id) ON DELETE CASCADE, "
+        # Append the title column with a NOT NULL constraint.
+        sql_issues += "Title TEXT NOT NULL, "
+        # Append the description column with an empty default value.
+        sql_issues += "Description TEXT DEFAULT '', "
+        # Append the status column with its data type and default.
+        sql_issues += "Status TEXT DEFAULT 'open' "
+        # Append the CHECK constraint for allowed status values.
+        sql_issues += "CHECK(Status IN ('open','in_progress',"
+        # Append the remaining allowed status enumeration values.
+        sql_issues += "'resolved','closed')), "
+        # Append the severity column with its data type and default.
+        sql_issues += "Severity TEXT DEFAULT 'medium' "
+        # Append the CHECK constraint for allowed severity values.
+        sql_issues += "CHECK(Severity IN ('critical','high',"
+        # Append the remaining allowed severity enumeration values.
+        sql_issues += "'medium','low')), "
+        # Append the timestamp columns for record tracking.
+        sql_issues += "CreatedAt TEXT NOT NULL, UpdatedAt TEXT NOT NULL)"
         # Execute the Issues table creation statement against the database connection.
         self.database_connection.execute(sql_issues)
-        # Define the SQL to create the Actions task table with status tracking.
-        sql_actions = "CREATE TABLE IF NOT EXISTS Actions (Id TEXT PRIMARY KEY, StrackId TEXT NOT NULL REFERENCES Stracks(Id) ON DELETE CASCADE, Title TEXT NOT NULL, Description TEXT DEFAULT '', Status TEXT DEFAULT 'pending' CHECK(Status IN ('pending','in_progress','done','cancelled')), CreatedAt TEXT NOT NULL, UpdatedAt TEXT NOT NULL)"
+        # Build the SQL CREATE statement for the Actions table.
+        sql_actions = "CREATE TABLE IF NOT EXISTS Actions ("
+        # Append the identifier and foreign key column definitions.
+        sql_actions += "Id TEXT PRIMARY KEY, StrackId TEXT NOT NULL "
+        # Append the foreign key reference clause with cascade delete.
+        sql_actions += "REFERENCES Stracks(Id) ON DELETE CASCADE, "
+        # Append the title column with a NOT NULL constraint.
+        sql_actions += "Title TEXT NOT NULL, "
+        # Append the description column with an empty default value.
+        sql_actions += "Description TEXT DEFAULT '', "
+        # Append the status column with its data type and default.
+        sql_actions += "Status TEXT DEFAULT 'pending' "
+        # Append the CHECK constraint for allowed status values.
+        sql_actions += "CHECK(Status IN ('pending','in_progress',"
+        # Append the remaining allowed status enumeration values.
+        sql_actions += "'done','cancelled')), "
+        # Append the timestamp columns for record tracking.
+        sql_actions += "CreatedAt TEXT NOT NULL, UpdatedAt TEXT NOT NULL)"
         # Execute the Actions table creation statement against the database connection.
         self.database_connection.execute(sql_actions)
-        # Define the SQL to create the Notes content table for freeform documentation.
-        sql_notes = "CREATE TABLE IF NOT EXISTS Notes (Id TEXT PRIMARY KEY, StrackId TEXT NOT NULL REFERENCES Stracks(Id) ON DELETE CASCADE, Title TEXT NOT NULL, Content TEXT DEFAULT '', CreatedAt TEXT NOT NULL, UpdatedAt TEXT NOT NULL)"
+        # Build the SQL CREATE statement for the Notes table.
+        sql_notes = "CREATE TABLE IF NOT EXISTS Notes ("
+        # Append the identifier and foreign key column definitions.
+        sql_notes += "Id TEXT PRIMARY KEY, StrackId TEXT NOT NULL "
+        # Append the foreign key reference clause with cascade delete.
+        sql_notes += "REFERENCES Stracks(Id) ON DELETE CASCADE, "
+        # Append the title column with a NOT NULL constraint.
+        sql_notes += "Title TEXT NOT NULL, "
+        # Append the content column with an empty default value.
+        sql_notes += "Content TEXT DEFAULT '', "
+        # Append the timestamp columns for record tracking.
+        sql_notes += "CreatedAt TEXT NOT NULL, UpdatedAt TEXT NOT NULL)"
         # Execute the Notes table creation statement against the database connection.
         self.database_connection.execute(sql_notes)
         # Commit all table creation statements to persist the schema changes.
@@ -411,22 +552,24 @@ class DatabaseManager:
         # Attempt to open the database connection and create all schema tables.
         try:
             # Open the database connection before schema initialization.
-            self._init_open_connection_function_()
+            self._init_open_link_function_()
             # Create all five entity tables in the database schema.
             self._init_create_tables_function_()
         # Handle operational errors such as disk I/O failures or locked database files.
-        except sqlite3.OperationalError as operational_error:
+        except sqlite3.OperationalError as exception_error:
             # Build the error message with operational failure context in Chinese.
             message_error = "[X] (OperationalError) 数据库操作失败，无法打开或写入数据库文件"
-            message_error += f"，错误详情: {operational_error}"
+            # Append the exception detail to the error message for diagnostics.
+            message_error += f"，错误详情: {exception_error}"
             # Output the error message for diagnostics since no logger is configured.
             print(message_error)
             # Re-raise with the diagnostic message for upstream error handling.
-            raise sqlite3.OperationalError(message_error) from operational_error
+            raise sqlite3.OperationalError(message_error) from exception_error
         # Handle all other unexpected errors during schema initialization.
         except Exception as exception_error:
             # Build the error message for unanticipated failures in Chinese.
             message_error = "[X] (OtherError) 数据库初始化过程中发生未知错误"
+            # Append the exception detail to the error message for diagnostics.
             message_error += f"，具体查看: {exception_error}"
             # Output the error message for diagnostics since no logger is configured.
             print(message_error)
@@ -435,4 +578,4 @@ class DatabaseManager:
         # Ensure the database connection is always closed after initialization.
         finally:
             # Close the database connection regardless of success or failure.
-            self._init_close_connection_function_()
+            self._init_close_link_function_()

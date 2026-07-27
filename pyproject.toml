@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyplans"
-version = "0.1.1"
+version = "0.1.2"
 description = "Priority Logs Actions Notes Stracks -- Local-first project management stack system."
 readme = "README.md"
 license = "GPL-3.0-only"
